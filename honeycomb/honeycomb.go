@@ -1,8 +1,6 @@
-package main
+package honeycomb
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	libhoney "github.com/honeycombio/libhoney-go"
@@ -38,15 +36,18 @@ func honeycombSpan(s *trace.SpanData) Span {
 	hcSpan := Span{
 		TraceID:   sc.TraceID.String(),
 		ID:        sc.SpanID.String(),
+		Name:      s.Name,
 		Timestamp: s.StartTime,
 	}
-	// Hmmm..... it doesn't like this. We're not getting parent spans
+
 	if s.ParentSpanID != (trace.SpanID{}) {
 		hcSpan.ParentID = s.ParentSpanID.String()
 	}
+
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
 		hcSpan.DurationMs = e.Sub(s)
 	}
+
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
 		hcSpan.Annotations = make([]Annotation, 0, len(s.Annotations)+len(s.MessageEvents))
 		for _, a := range s.Annotations {
@@ -71,32 +72,4 @@ func honeycombSpan(s *trace.SpanData) Span {
 		}
 	}
 	return hcSpan
-}
-
-// type customTraceExporter struct{}
-
-// func (ce *customTraceExporter) ExportSpan(sd *trace.SpanData) {
-// 	fmt.Printf("Name: %s\nTraceID: %x\nSpanID: %x\nParentSpanID: %x\nStartTime: %s\nEndTime: %s\nAnnotations: %+v\n\n",
-// 		sd.Name, sd.TraceID, sd.SpanID, sd.ParentSpanID, sd.StartTime, sd.EndTime, sd.Annotations)
-// }
-
-func main() {
-	libhoney.Init(libhoney.Config{
-		WriteKey: "5ba769dbf42cbd66c950ffc8701c07d2",
-		Dataset:  "opencensus-test-integration",
-	})
-	defer libhoney.Close()
-
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-
-	trace.RegisterExporter(new(Exporter))
-	// trace.RegisterExporter(new(customTraceExporter))
-
-	for i := 0; i < 5; i++ {
-		_, span := trace.StartSpan(context.Background(), fmt.Sprintf("sample-%d", i))
-		span.Annotate([]trace.Attribute{trace.Int64Attribute("invocations", 1)}, "Invoked it")
-		span.End()
-		<-time.After(10 * time.Millisecond)
-	}
-	<-time.After(500 * time.Millisecond)
 }

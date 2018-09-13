@@ -9,35 +9,23 @@ import (
 	"log"
 	"os"
 
-	"go.opencensus.io/exporter/zipkin"
+	libhoney "github.com/honeycombio/libhoney-go"
+	honeycomb "github.com/honeycombio/opencensus-exporter/honeycomb"
 	"go.opencensus.io/trace"
-
-	openzipkin "github.com/openzipkin/zipkin-go"
-	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 )
 
 func main() {
-	localEndpointURI := "192.168.1.5:5454"
-	reporterURI := "http://localhost:9411/api/v2/spans"
-	serviceName := "server"
+	libhoney.Init(libhoney.Config{
+		WriteKey: "YOUR WRITE KEY HERE",
+		Dataset:  "YOUR DATASET HERE",
+	})
+	defer libhoney.Close()
 
-	// In a REPL:
-	//   1. Read input
-	//   2. process input
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
 	br := bufio.NewReader(os.Stdin)
 
-	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
-	if err != nil {
-		log.Fatalf("Failed to create Zipkin localEndpoint with URI %q error: %v", localEndpointURI, err)
-	}
-
-	reporter := zipkinHTTP.NewReporter(reporterURI)
-	ze := zipkin.NewExporter(reporter, localEndpoint)
-
-	// And now finally register it as a Trace Exporter
-	trace.RegisterExporter(ze)
-
-	// For demo purposes, set the trace sampling probability to be high
+	trace.RegisterExporter(new(honeycomb.Exporter))
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(1.0)})
 
 	// repl is the read, evaluate, print, loop
@@ -51,8 +39,6 @@ func main() {
 	}
 }
 
-// readEvaluateProcess reads a line from the input reader and
-// then processes it. It returns an error if any was encountered.
 func readEvaluateProcess(br *bufio.Reader) error {
 	ctx, span := trace.StartSpan(context.Background(), "repl")
 	defer span.End()
