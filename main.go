@@ -10,7 +10,7 @@ import (
 	"os"
 
 	libhoney "github.com/honeycombio/libhoney-go"
-	honeycomb "github.com/honeycombio/opencensus-exporter/honeycomb"
+	"github.com/honeycombio/opencensus-exporter/honeycomb"
 	"go.opencensus.io/trace"
 )
 
