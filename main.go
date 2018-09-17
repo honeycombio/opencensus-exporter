@@ -9,23 +9,18 @@ import (
 	"log"
 	"os"
 
-	libhoney "github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/opencensus-exporter/honeycomb"
 	"go.opencensus.io/trace"
 )
 
 func main() {
-	libhoney.Init(libhoney.Config{
-		WriteKey: "YOUR WRITE KEY HERE",
-		Dataset:  "YOUR DATASET HERE",
-	})
-	defer libhoney.Close()
+	exporter := honeycomb.NewExporter("YOUR-HONEYCOMB-WRITE-KEY", "YOUR-DATASET-NAME")
+	defer exporter.Close()
 
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	trace.RegisterExporter(exporter)
 
 	br := bufio.NewReader(os.Stdin)
 
-	trace.RegisterExporter(new(honeycomb.Exporter))
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(1.0)})
 
 	// repl is the read, evaluate, print, loop

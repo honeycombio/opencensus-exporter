@@ -1,13 +1,17 @@
 package honeycomb
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	libhoney "github.com/honeycombio/libhoney-go"
 	"go.opencensus.io/trace"
 )
 
-type Exporter struct{}
+type Exporter struct {
+	Builder *libhoney.Builder
+}
 
 type Annotation struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -15,20 +19,62 @@ type Annotation struct {
 }
 
 type Span struct {
-	TraceID  string `json:"traceId"`
-	Name     string `json:"name"`
-	ID       string `json:"id"`
-	ParentID string `json:"parentId,omitempty"`
-	// ServiceName string        `json:"serviceName,omitempty"`
-	// HostIPv4    string        `json:"hostIPv4,omitempty"`
-	// Port        int           `json:"port,omitempty"`
-	DurationMs  time.Duration `json:"durationMs,omitempty"`
-	Timestamp   time.Time     `json:"timestamp,omitempty"`
-	Annotations []Annotation  `json:"annotations,omitempty"`
+	TraceID     string       `json:"traceId"`
+	Name        string       `json:"name"`
+	ID          string       `json:"id"`
+	ParentID    string       `json:"parentId,omitempty"`
+	DurationMs  int          `json:"durationMs,omitempty"`
+	Timestamp   time.Time    `json:"timestamp,omitempty"`
+	Annotations []Annotation `json:"annotations,omitempty"`
+}
+
+func (e *Exporter) Close() {
+	libhoney.Close()
+}
+
+func NewExporter(writeKey, dataset string) *Exporter {
+	libhoney.Init(libhoney.Config{
+		WriteKey: writeKey,
+		Dataset:  dataset,
+	})
+	return &Exporter{Builder: libhoney.NewBuilder()}
 }
 
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
-	libhoney.SendNow(honeycombSpan(sd))
+	ev := e.Builder.NewEvent()
+	ev.Timestamp = sd.StartTime
+	hs := honeycombSpan(sd)
+	ev.Add(hs)
+	fmt.Print(hs.DurationMs)
+
+	// Add an event field for each attribute
+	if len(sd.Attributes) != 0 {
+		for key, value := range sd.Attributes {
+			switch v := value.(type) {
+			case string:
+				ev.AddField(key, v)
+			case bool:
+				if v {
+					ev.AddField(key, "true")
+				} else {
+					ev.AddField(key, "false")
+				}
+			case int64:
+				ev.AddField(key, strconv.FormatInt(v, 10))
+			}
+		}
+	}
+
+	// Add an event field for status code and status message
+	if sd.Status.Code != 0 || sd.Status.Message != "" {
+		if sd.Status.Code != 0 {
+			ev.AddField("status_code", sd.Status.Code)
+		}
+		if sd.Status.Message != "" {
+			ev.AddField("status_description", sd.Status.Message)
+		}
+	}
+	ev.Send()
 }
 
 func honeycombSpan(s *trace.SpanData) Span {
@@ -45,7 +91,8 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		hcSpan.DurationMs = e.Sub(s)
+		durationMs := int(e.Sub(s).Nanoseconds() / int64(time.Millisecond))
+		hcSpan.DurationMs = durationMs
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {

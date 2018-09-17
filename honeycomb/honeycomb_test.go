@@ -8,9 +8,11 @@ import (
 	"go.opencensus.io/trace"
 )
 
+func getTimeinMs(dur time.Duration) int {
+	return int(dur.Nanoseconds()) / int(time.Millisecond)
+}
+
 func TestExport(t *testing.T) {
-	// Since Zipkin reports in microsecond resolution let's round our Timestamp,
-	// so when deserializing Zipkin data in this test we can properly compare.
 	now := time.Now().Round(time.Microsecond)
 	tests := []struct {
 		span *trace.SpanData
@@ -65,7 +67,7 @@ func TestExport(t *testing.T) {
 				Name:       "name",
 				ParentID:   "",
 				Timestamp:  now,
-				DurationMs: (now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
 				Annotations: []Annotation{
 					{
 						Timestamp: now,
@@ -78,15 +80,6 @@ func TestExport(t *testing.T) {
 				},
 			},
 		},
-
-		// {TraceID:"0102030405060708090a0b0c0d0e0f10",
-		// Name:"name",
-		// ID:"1112131415161718",
-		// ParentID:"",
-		// DurationMs:86400000000000, 
-		// Timestamp:time.Time{wall:0x23999238, ext:63672544799, loc:(*time.Location)(0x1497f80)}, 
-		// Annotations:[]honeycomb.Annotation{honeycomb.Annotation{Timestamp:time.Time{wall:0x23999238, ext:63672544799, loc:(*time.Location)(0x1497f80)}, Value:"Annotation"}, honeycomb.Annotation{Timestamp:time.Time{wall:0x23999238, ext:63672544799, loc:(*time.Location)(0x1497f80)}, Value:"SENT"}}}
-
 		{
 			span: &trace.SpanData{
 				SpanContext: trace.SpanContext{
@@ -100,10 +93,10 @@ func TestExport(t *testing.T) {
 			},
 			want: Span{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-				ID:"1112131415161718",
+				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: (now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
 			},
 		},
 		{
@@ -124,10 +117,10 @@ func TestExport(t *testing.T) {
 			want: Span{
 
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-				ID:"1112131415161718",
+				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: (now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
 			},
 		},
 		{
@@ -146,10 +139,10 @@ func TestExport(t *testing.T) {
 			},
 			want: Span{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-				ID:"1112131415161718",
+				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: (now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
 			},
 		},
 	}
