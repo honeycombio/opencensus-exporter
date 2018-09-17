@@ -1,7 +1,6 @@
 package honeycomb
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -45,7 +44,6 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	ev.Timestamp = sd.StartTime
 	hs := honeycombSpan(sd)
 	ev.Add(hs)
-	fmt.Print(hs.DurationMs)
 
 	// Add an event field for each attribute
 	if len(sd.Attributes) != 0 {
