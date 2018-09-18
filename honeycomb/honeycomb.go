@@ -1,7 +1,6 @@
 package honeycomb
 
 import (
-	"strconv"
 	"time"
 
 	libhoney "github.com/honeycombio/libhoney-go"
@@ -49,16 +48,14 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	if len(sd.Attributes) != 0 {
 		for key, value := range sd.Attributes {
 			switch v := value.(type) {
-			case string:
-				ev.AddField(key, v)
 			case bool:
 				if v {
-					ev.AddField(key, "true")
+					ev.AddField(key, true)
 				} else {
-					ev.AddField(key, "false")
+					ev.AddField(key, false)
 				}
-			case int64:
-				ev.AddField(key, strconv.FormatInt(v, 10))
+			default:
+				ev.AddField(key, v)
 			}
 		}
 	}
@@ -89,8 +86,7 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		durationMs := int(e.Sub(s).Nanoseconds() / int64(time.Millisecond))
-		hcSpan.DurationMs = durationMs
+		hcSpan.DurationMs = int(e.Sub(s) / time.Millisecond)
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {

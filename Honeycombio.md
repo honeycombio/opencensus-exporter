@@ -1,7 +1,7 @@
 ---
 title: "Honeycomb.io (Tracing)"
-date: 2018-09-13
-draft: true
+date: 2018-09-17
+draft: false
 weight: 3
 class: "resized-logo"
 aliases: [/supported-exporters/go/honeycomb]
@@ -30,27 +30,19 @@ To create the exporter, we'll need to:
 package main
 
 import (
-    "log"
-    
-    libhoney "github.com/honeycombio/libhoney-go"
+"log"
+
     honeycomb "github.com/honeycombio/opencensus-exporter/honeycomb"
     "go.opencensus.io/trace"
 
 )
 
 func main() {
-    libhoney.Init(libhoney.Config{
-		WriteKey: "YOUR WRITE KEY HERE",
-		Dataset:  "YOUR DATASET HERE",
-	})
-	defer libhoney.Close()
+exporter := honeycomb.NewExporter("YOUR-HONEYCOMB-WRITE-KEY", "YOUR-DATASET-NAME")
+defer exporter.Close()
 
-    trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+    trace.RegisterExporter(exporter)
 
-	br := bufio.NewReader(os.Stdin)
-
-	trace.RegisterExporter(new(honeycomb.Exporter))
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(1.0)})
 }
 {{</highlight>}}
 

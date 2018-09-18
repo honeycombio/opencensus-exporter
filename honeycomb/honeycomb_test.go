@@ -8,10 +8,6 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func getTimeinMs(dur time.Duration) int {
-	return int(dur.Nanoseconds()) / int(time.Millisecond)
-}
-
 func TestExport(t *testing.T) {
 	now := time.Now().Round(time.Microsecond)
 	tests := []struct {
@@ -67,7 +63,7 @@ func TestExport(t *testing.T) {
 				Name:       "name",
 				ParentID:   "",
 				Timestamp:  now,
-				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: 86400000,
 				Annotations: []Annotation{
 					{
 						Timestamp: now,
@@ -96,7 +92,7 @@ func TestExport(t *testing.T) {
 				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: 86400000,
 			},
 		},
 		{
@@ -120,7 +116,7 @@ func TestExport(t *testing.T) {
 				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: 86400000,
 			},
 		},
 		{
@@ -142,7 +138,7 @@ func TestExport(t *testing.T) {
 				ID:         "1112131415161718",
 				Name:       "name",
 				Timestamp:  now,
-				DurationMs: getTimeinMs(now.Add(24 * time.Hour).Sub(now)),
+				DurationMs: 86400000,
 			},
 		},
 	}
