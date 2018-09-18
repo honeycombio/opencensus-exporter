@@ -1,4 +1,19 @@
-package honeycomb
+// Copyright 2018, OpenCensus Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package honeycomb contains a trace exporter for Honeycomb
+package honeycomb // import "go.opencensus.io/exporter/honeycomb"
 
 import (
 	"time"
@@ -7,15 +22,18 @@ import (
 	"go.opencensus.io/trace"
 )
 
+// Exporter is an implementation of trace.Exporter that uploads a span to Honeycomb
 type Exporter struct {
 	Builder *libhoney.Builder
 }
 
+// Annotation represents an annotation with a value and a timestamp.
 type Annotation struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     string    `json:"value"`
 }
 
+// Span is the format of trace events that Honeycomb accepts
 type Span struct {
 	TraceID     string       `json:"traceId"`
 	Name        string       `json:"name"`
@@ -26,10 +44,18 @@ type Span struct {
 	Annotations []Annotation `json:"annotations,omitempty"`
 }
 
+// Close waits for all in-flight messages to be sent. You should
+// call Close() before app termination.
 func (e *Exporter) Close() {
 	libhoney.Close()
 }
 
+// NewExporter returns an implementation of trace.Exporter that uploads spans to Honeycomb
+//
+// writeKey is your Honeycomb writeKey (also known as your API key)
+// dataset is the name of your Honeycomb dataset to send trace events to
+//
+// Don't have a Honeycomb account? Sign up at https://ui.honeycomb.io/signup
 func NewExporter(writeKey, dataset string) *Exporter {
 	libhoney.Init(libhoney.Config{
 		WriteKey: writeKey,
@@ -38,6 +64,7 @@ func NewExporter(writeKey, dataset string) *Exporter {
 	return &Exporter{Builder: libhoney.NewBuilder()}
 }
 
+// ExportSpan exports a span to Honeycomb
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	ev := e.Builder.NewEvent()
 	ev.Timestamp = sd.StartTime
