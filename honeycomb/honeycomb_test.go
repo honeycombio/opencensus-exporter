@@ -1,12 +1,7 @@
 package honeycomb
 
 import (
-	"bytes"
-	"compress/gzip"
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -164,72 +159,31 @@ func TestExport(t *testing.T) {
 func TestHoneycombOutput(t *testing.T) {
 	mockHoneycomb := &libhoney.MockOutput{}
 	assert := assert.New(t)
+
+	// Note that we need to call libhoney.Init *after* calling NewExporter here,
+	// otherwise the libhoney.Init call inside NewExporter will stomp over
+	// this. Actually, we should probably avoid calling libhoney.Init inside
+	// NewExporter.
+	exporter := NewExporter("test", "test")
 	libhoney.Init(libhoney.Config{
-		WriteKey: "test",
-		Dataset:  "test",
-		Output:   mockHoneycomb,
+		Output: mockHoneycomb,
 	})
-	exporter := Exporter{libhoney.NewBuilder()}
+	trace.RegisterExporter(exporter)
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	_, span := trace.StartSpan(context.TODO(), "mySpan")
+	span.AddAttributes(trace.StringAttribute("attributeName", "attributeValue"))
+	span.End()
+	// TODO: we should explicitly set the span's start and end timestamps, if
+	// possible, so that we can check the event.Timestamp and durationMs
+	// values.
 
-	jsonPayload := `[{
-				"traceId":     "350565b6a90d4c8c",
-				"name":        "persist",
-				"id":          "34472e70cb669b31",
-				"parentId":    "",
-				"timestamp":  1506629747288651,
-				"duration": 192
-			}]`
-
-	w := handleGzipped(exporter, []byte(jsonPayload))
-
-	assert.Equal(http.StatusAccepted, w.Code)
 	assert.Equal(1, len(mockHoneycomb.Events()))
 	assert.Equal(map[string]interface{}{
-		"traceId":        "350565b6a90d4c8c",
-		"name":           "persist",
-		"id":             "34472e70cb669b31",
-		"serviceName":    "poodle",
-		"hostIPv4":       "10.129.211.111",
-		"lc":             "poodle",
-		"responseLength": int64(136),
-		"durationMs":     0.192,
+		"traceId":       span.SpanContext().TraceID.String(),
+		"id":            span.SpanContext().SpanID.String(),
+		"name":          "mySpan",
+		"attributeName": "attributeValue",
+		"serviceName":   "poodle",
 	}, mockHoneycomb.Events()[0].Fields())
 	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
-}
-
-func handleGzipped(e Exporter, payload []byte) *httptest.ResponseRecorder {
-	var compressedPayload bytes.Buffer
-	zw := gzip.NewWriter(&compressedPayload)
-	zw.Write(payload)
-	zw.Close()
-
-	r := httptest.NewRequest("POST", "/api/v1/spans",
-		&compressedPayload)
-	r.Header.Add("Content-Encoding", "gzip")
-	r.Header.Add("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	w = unGzip(w, r)
-	return w
-}
-
-func unGzip(w *httptest.ResponseRecorder, r *http.Request) *httptest.ResponseRecorder {
-	var newBody io.ReadCloser
-	isGzipped := r.Header.Get("Content-Encoding")
-	if isGzipped == "gzip" {
-		buf := bytes.Buffer{}
-		if _, err := io.Copy(&buf, r.Body); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("error allocating buffer for ungzipping"))
-			return w
-		}
-		var err error
-		newBody, err = gzip.NewReader(&buf)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("error ungzipping span data"))
-			return w
-		}
-		r.Body = newBody
-	}
-	return w
 }
