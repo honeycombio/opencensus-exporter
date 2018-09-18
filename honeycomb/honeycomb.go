@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package honeycomb contains a trace exporter for Honeycomb
-package honeycomb // import "go.opencensus.io/exporter/honeycomb"
+package honeycomb
 
 import (
 	"time"
@@ -57,11 +57,10 @@ func (e *Exporter) Close() {
 //
 // Don't have a Honeycomb account? Sign up at https://ui.honeycomb.io/signup
 func NewExporter(writeKey, dataset string) *Exporter {
-	libhoney.Init(libhoney.Config{
-		WriteKey: writeKey,
-		Dataset:  dataset,
-	})
-	return &Exporter{Builder: libhoney.NewBuilder()}
+	builder := libhoney.NewBuilder()
+	builder.WriteKey = writeKey
+	builder.Dataset = dataset
+	return &Exporter{builder}
 }
 
 // ExportSpan exports a span to Honeycomb
