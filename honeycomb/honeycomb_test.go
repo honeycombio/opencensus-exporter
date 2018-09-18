@@ -1,10 +1,18 @@
 package honeycomb
 
 import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
 
+	libhoney "github.com/honeycombio/libhoney-go"
+	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 )
 
@@ -151,4 +159,77 @@ func TestExport(t *testing.T) {
 			t.Errorf("honeycombSpan:\n\tgot  %#v\n\twant %#v", got, tt.want)
 		}
 	}
+}
+
+func TestHoneycombOutput(t *testing.T) {
+	mockHoneycomb := &libhoney.MockOutput{}
+	assert := assert.New(t)
+	libhoney.Init(libhoney.Config{
+		WriteKey: "test",
+		Dataset:  "test",
+		Output:   mockHoneycomb,
+	})
+	exporter := Exporter{libhoney.NewBuilder()}
+
+	jsonPayload := `[{
+				"traceId":     "350565b6a90d4c8c",
+				"name":        "persist",
+				"id":          "34472e70cb669b31",
+				"parentId":    "",
+				"timestamp":  1506629747288651,
+				"duration": 192
+			}]`
+
+	w := handleGzipped(exporter, []byte(jsonPayload))
+
+	assert.Equal(http.StatusAccepted, w.Code)
+	assert.Equal(1, len(mockHoneycomb.Events()))
+	assert.Equal(map[string]interface{}{
+		"traceId":        "350565b6a90d4c8c",
+		"name":           "persist",
+		"id":             "34472e70cb669b31",
+		"serviceName":    "poodle",
+		"hostIPv4":       "10.129.211.111",
+		"lc":             "poodle",
+		"responseLength": int64(136),
+		"durationMs":     0.192,
+	}, mockHoneycomb.Events()[0].Fields())
+	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
+}
+
+func handleGzipped(e Exporter, payload []byte) *httptest.ResponseRecorder {
+	var compressedPayload bytes.Buffer
+	zw := gzip.NewWriter(&compressedPayload)
+	zw.Write(payload)
+	zw.Close()
+
+	r := httptest.NewRequest("POST", "/api/v1/spans",
+		&compressedPayload)
+	r.Header.Add("Content-Encoding", "gzip")
+	r.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	w = unGzip(w, r)
+	return w
+}
+
+func unGzip(w *httptest.ResponseRecorder, r *http.Request) *httptest.ResponseRecorder {
+	var newBody io.ReadCloser
+	isGzipped := r.Header.Get("Content-Encoding")
+	if isGzipped == "gzip" {
+		buf := bytes.Buffer{}
+		if _, err := io.Copy(&buf, r.Body); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("error allocating buffer for ungzipping"))
+			return w
+		}
+		var err error
+		newBody, err = gzip.NewReader(&buf)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("error ungzipping span data"))
+			return w
+		}
+		r.Body = newBody
+	}
+	return w
 }
