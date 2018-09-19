@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, Honeycomb, Hound Technology, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,27 +73,16 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	// Add an event field for each attribute
 	if len(sd.Attributes) != 0 {
 		for key, value := range sd.Attributes {
-			switch v := value.(type) {
-			case bool:
-				if v {
-					ev.AddField(key, true)
-				} else {
-					ev.AddField(key, false)
-				}
-			default:
-				ev.AddField(key, v)
-			}
+			ev.AddField(key, value)
 		}
 	}
 
 	// Add an event field for status code and status message
-	if sd.Status.Code != 0 || sd.Status.Message != "" {
-		if sd.Status.Code != 0 {
-			ev.AddField("status_code", sd.Status.Code)
-		}
-		if sd.Status.Message != "" {
-			ev.AddField("status_description", sd.Status.Message)
-		}
+	if sd.Status.Code != 0 {
+		ev.AddField("status_code", sd.Status.Code)
+	}
+	if sd.Status.Message != "" {
+		ev.AddField("status_description", sd.Status.Message)
 	}
 	ev.Send()
 }
