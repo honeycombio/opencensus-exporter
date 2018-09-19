@@ -1,3 +1,18 @@
+// Copyright 2018, Honeycomb, Hound Technology, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package honeycomb contains a trace exporter for Honeycomb
 package honeycomb
 
 import (
@@ -7,28 +22,69 @@ import (
 	"go.opencensus.io/trace"
 )
 
-type Exporter struct{}
+// Exporter is an implementation of trace.Exporter that uploads a span to Honeycomb
+type Exporter struct {
+	Builder *libhoney.Builder
+}
 
+// Annotation represents an annotation with a value and a timestamp.
 type Annotation struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     string    `json:"value"`
 }
 
+// Span is the format of trace events that Honeycomb accepts
 type Span struct {
-	TraceID  string `json:"traceId"`
-	Name     string `json:"name"`
-	ID       string `json:"id"`
-	ParentID string `json:"parentId,omitempty"`
-	// ServiceName string        `json:"serviceName,omitempty"`
-	// HostIPv4    string        `json:"hostIPv4,omitempty"`
-	// Port        int           `json:"port,omitempty"`
-	DurationMs  time.Duration `json:"durationMs,omitempty"`
-	Timestamp   time.Time     `json:"timestamp,omitempty"`
-	Annotations []Annotation  `json:"annotations,omitempty"`
+	TraceID     string       `json:"traceId"`
+	Name        string       `json:"name"`
+	ID          string       `json:"id"`
+	ParentID    string       `json:"parentId,omitempty"`
+	DurationMs  int          `json:"durationMs,omitempty"`
+	Timestamp   time.Time    `json:"timestamp,omitempty"`
+	Annotations []Annotation `json:"annotations,omitempty"`
 }
 
+// Close waits for all in-flight messages to be sent. You should
+// call Close() before app termination.
+func (e *Exporter) Close() {
+	libhoney.Close()
+}
+
+// NewExporter returns an implementation of trace.Exporter that uploads spans to Honeycomb
+//
+// writeKey is your Honeycomb writeKey (also known as your API key)
+// dataset is the name of your Honeycomb dataset to send trace events to
+//
+// Don't have a Honeycomb account? Sign up at https://ui.honeycomb.io/signup
+func NewExporter(writeKey, dataset string) *Exporter {
+	builder := libhoney.NewBuilder()
+	builder.WriteKey = writeKey
+	builder.Dataset = dataset
+	return &Exporter{builder}
+}
+
+// ExportSpan exports a span to Honeycomb
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
-	libhoney.SendNow(honeycombSpan(sd))
+	ev := e.Builder.NewEvent()
+	ev.Timestamp = sd.StartTime
+	hs := honeycombSpan(sd)
+	ev.Add(hs)
+
+	// Add an event field for each attribute
+	if len(sd.Attributes) != 0 {
+		for key, value := range sd.Attributes {
+			ev.AddField(key, value)
+		}
+	}
+
+	// Add an event field for status code and status message
+	if sd.Status.Code != 0 {
+		ev.AddField("status_code", sd.Status.Code)
+	}
+	if sd.Status.Message != "" {
+		ev.AddField("status_description", sd.Status.Message)
+	}
+	ev.Send()
 }
 
 func honeycombSpan(s *trace.SpanData) Span {
@@ -45,7 +101,7 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		hcSpan.DurationMs = e.Sub(s)
+		hcSpan.DurationMs = int(e.Sub(s) / time.Millisecond)
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
