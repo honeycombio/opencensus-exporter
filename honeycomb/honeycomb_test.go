@@ -174,12 +174,12 @@ func TestHoneycombOutput(t *testing.T) {
 
 	assert.Equal(1, len(mockHoneycomb.Events()))
 	assert.Equal(map[string]interface{}{
-		"traceId":       span.SpanContext().TraceID.String(),
-		"id":            span.SpanContext().SpanID.String(),
-		"name":          "mySpan",
-		"attributeName": "attributeValue",
-		"durationMs":    1,
-		"timestamp":     mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
+		"trace.trace_id": span.SpanContext().TraceID.String(),
+		"trace.span_id":  span.SpanContext().SpanID.String(),
+		"name":           "mySpan",
+		"attributeName":  "attributeValue",
+		"duration_ms":    1,
+		"timestamp":      mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
 	}, mockHoneycomb.Events()[0].Fields())
 	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
 }
