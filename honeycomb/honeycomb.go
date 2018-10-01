@@ -35,11 +35,11 @@ type Annotation struct {
 
 // Span is the format of trace events that Honeycomb accepts
 type Span struct {
-	TraceID     string       `json:"traceId"`
+	TraceID     string       `json:"trace.trace_id"`
 	Name        string       `json:"name"`
-	ID          string       `json:"id"`
-	ParentID    string       `json:"parentId,omitempty"`
-	DurationMs  int          `json:"durationMs,omitempty"`
+	ID          string       `json:"trace.span_id"`
+	ParentID    string       `json:"trace.parent_id,omitempty"`
+	DurationMs  int          `json:"duration_ms,omitempty"`
 	Timestamp   time.Time    `json:"timestamp,omitempty"`
 	Annotations []Annotation `json:"annotations,omitempty"`
 }
