@@ -44,7 +44,14 @@ func main() {
 exporter := honeycomb.NewExporter("YOUR-HONEYCOMB-WRITE-KEY", "YOUR-DATASET-NAME")
 defer exporter.Close()
 
-    trace.RegisterExporter(exporter)
+sampleRate := 0.5
+trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(sampleRate)})
+// If you use the Open Census Probability Sampler, be sure to pass that sampleRate to the exporter
+// so that Honeycomb can pick it up and make sure we handle your sampling properly.
+// Note: The Probability Sampler uses a fraction, whereas Honeycomb uses an integer, which is the inverse of that fraction.
+exporter.SampleRate = sampleRate
+
+trace.RegisterExporter(exporter)
 
 }
 {{</highlight>}}
