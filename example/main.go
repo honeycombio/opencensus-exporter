@@ -21,7 +21,12 @@ func main() {
 
 	br := bufio.NewReader(os.Stdin)
 
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(1.0)})
+	sampleRate := 0.5
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(sampleRate)})
+	// If you use the Open Census Probability Sampler, be sure to pass that sampleRate to the exporter
+	// so that Honeycomb can pick it up and make sure we handle your sampling properly.
+	// Note: The Probability Sampler uses a fraction, whereas Honeycomb uses an integer, which is the inverse of that fraction.
+	exporter.SampleRate = sampleRate
 
 	// repl is the read, evaluate, print, loop
 	for {
@@ -73,3 +78,38 @@ func processLine(ctx context.Context, in []byte) (out []byte, err error) {
 
 	return bytes.ToUpper(in), nil
 }
+	_, span := trace.StartSpan(ctx, "processLine")
+	defer span.End()
+
+	return bytes.ToUpper(in), nil
+}
+
+// package main
+
+// import (
+// 	"context"
+// 	"fmt"
+// 	"time"
+
+// 	"github.com/honeycombio/opencensus-exporter/honeycomb"
+// 	"go.opencensus.io/trace"
+// )
+
+// func main() {
+// 	exporter := honeycomb.NewExporter("44b49dc4ccb387b11a57fab6cf731c0c", "sampled-traces")
+// 	defer exporter.Close()
+
+// 	trace.RegisterExporter(exporter)
+
+// 	sampleRate := 0.5
+// 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(sampleRate)})
+// 	exporter.SampleRate = sampleRate
+
+// 	for i := 0; i < 5; i++ {
+// 		_, span := trace.StartSpan(context.Background(), fmt.Sprintf("sample-%d", i))
+// 		span.Annotate([]trace.Attribute{trace.Int64Attribute("invocations", 1)}, "Invoked it")
+// 		span.End()
+// 		<-time.After(10 * time.Millisecond)
+// 	}
+// 	<-time.After(500 * time.Millisecond)
+// }
