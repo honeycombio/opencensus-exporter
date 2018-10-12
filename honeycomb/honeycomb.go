@@ -24,8 +24,8 @@ import (
 
 // Exporter is an implementation of trace.Exporter that uploads a span to Honeycomb
 type Exporter struct {
-	Builder    *libhoney.Builder
-	SampleRate float64
+	Builder        *libhoney.Builder
+	SampleFraction float64
 }
 
 // Annotation represents an annotation with a value and a timestamp.
@@ -63,14 +63,17 @@ func NewExporter(writeKey, dataset string) *Exporter {
 	builder.Dataset = dataset
 	// default sample reate is 1: aka no sampling.
 	// set sampleRate on the exporter to be the sample rate given to the ProbabilitySampler if used.
-	return &Exporter{builder, 1}
+	return &Exporter{
+		Builder:        builder,
+		SampleFraction: 1,
+	}
 }
 
 // ExportSpan exports a span to Honeycomb
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	ev := e.Builder.NewEvent()
-	if e.SampleRate != 0 {
-		ev.SampleRate = uint(1 / e.SampleRate)
+	if e.SampleFraction != 0 {
+		ev.SampleRate = uint(1 / e.SampleFraction)
 	}
 	ev.Timestamp = sd.StartTime
 	hs := honeycombSpan(sd)

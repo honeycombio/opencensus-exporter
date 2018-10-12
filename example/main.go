@@ -21,12 +21,12 @@ func main() {
 
 	br := bufio.NewReader(os.Stdin)
 
-	sampleRate := 0.5
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(sampleRate)})
+	sampleFraction := 0.5
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(sampleFraction)})
 	// If you use the Open Census Probability Sampler, be sure to pass that sampleRate to the exporter
 	// so that Honeycomb can pick it up and make sure we handle your sampling properly.
 	// Note: The Probability Sampler uses a fraction, whereas Honeycomb uses an integer, which is the inverse of that fraction.
-	exporter.SampleRate = sampleRate
+	exporter.SampleFraction = sampleFraction
 
 	// repl is the read, evaluate, print, loop
 	for {
