@@ -28,6 +28,8 @@ func main() {
 	// Note: The Probability Sampler uses a fraction, whereas Honeycomb uses an integer, which is the inverse of that fraction.
 	exporter.SampleFraction = sampleFraction
 
+	exporter.ServiceName = "honeycomb-example"
+
 	// repl is the read, evaluate, print, loop
 	for {
 		if err := readEvaluateProcess(br); err != nil {

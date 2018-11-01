@@ -160,6 +160,7 @@ func TestHoneycombOutput(t *testing.T) {
 	mockHoneycomb := &libhoney.MockOutput{}
 	assert := assert.New(t)
 	exporter := NewExporter("test", "test")
+	exporter.ServiceName = "honeycomb-test"
 
 	libhoney.Init(libhoney.Config{
 		Output: mockHoneycomb,
@@ -180,6 +181,7 @@ func TestHoneycombOutput(t *testing.T) {
 		"attributeName":  "attributeValue",
 		"duration_ms":    1,
 		"timestamp":      mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
+		"service_name":   "honeycomb-test",
 	}, mockHoneycomb.Events()[0].Fields())
 	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
 }

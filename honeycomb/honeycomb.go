@@ -26,6 +26,10 @@ import (
 type Exporter struct {
 	Builder        *libhoney.Builder
 	SampleFraction float64
+	// Service Name identifies your application. While optional, setting this
+	// field is extremely valuable when you instrument multiple services. If set
+	// it will be added to all events as `service_name`
+	ServiceName string
 }
 
 // Annotation represents an annotation with a value and a timestamp.
@@ -66,6 +70,7 @@ func NewExporter(writeKey, dataset string) *Exporter {
 	return &Exporter{
 		Builder:        builder,
 		SampleFraction: 1,
+		ServiceName:    "",
 	}
 }
 
@@ -74,6 +79,9 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	ev := e.Builder.NewEvent()
 	if e.SampleFraction != 0 {
 		ev.SampleRate = uint(1 / e.SampleFraction)
+	}
+	if e.ServiceName != "" {
+		ev.AddField("service_name", e.ServiceName)
 	}
 	ev.Timestamp = sd.StartTime
 	hs := honeycombSpan(sd)
