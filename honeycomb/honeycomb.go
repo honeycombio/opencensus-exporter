@@ -30,6 +30,7 @@ type Exporter struct {
 	// field is extremely valuable when you instrument multiple services. If set
 	// it will be added to all events as `service_name`
 	ServiceName string
+	Version        string
 }
 
 // Annotation represents an annotation with a value and a timestamp.
@@ -71,11 +72,16 @@ func NewExporter(writeKey, dataset string) *Exporter {
 		Builder:        builder,
 		SampleFraction: 1,
 		ServiceName:    "",
+		Version:        "",
 	}
 }
 
 // ExportSpan exports a span to Honeycomb
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
+	if e.Version != "" && libhoney.UserAgentAddition != "" {
+		libhoney.UserAgentAddition = e.Version
+	}
+
 	ev := e.Builder.NewEvent()
 	if e.SampleFraction != 0 {
 		ev.SampleRate = uint(1 / e.SampleFraction)

@@ -161,6 +161,7 @@ func TestHoneycombOutput(t *testing.T) {
 	assert := assert.New(t)
 	exporter := NewExporter("test", "test")
 	exporter.ServiceName = "honeycomb-test"
+	exporter.Version = "test-version"
 
 	libhoney.Init(libhoney.Config{
 		Output: mockHoneycomb,

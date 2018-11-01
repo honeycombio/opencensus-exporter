@@ -30,6 +30,8 @@ func main() {
 
 	exporter.ServiceName = "honeycomb-example"
 
+	// Do you want to add a version to honeycomb? You can do that by setting the version on the exporter.
+	exporter.Version = "1.0"
 	// repl is the read, evaluate, print, loop
 	for {
 		if err := readEvaluateProcess(br); err != nil {
