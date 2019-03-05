@@ -63,13 +63,17 @@ func (e *Exporter) Close() {
 // Don't have a Honeycomb account? Sign up at https://ui.honeycomb.io/signup
 func NewExporter(writeKey, dataset string) *Exporter {
 	// Developer note: bump this with each release
-	versionStr := "0.0.4"
+	versionStr := "0.0.5"
 	libhoney.UserAgentAddition = "Honeycomb-OpenCensus-exporter/" + versionStr
+
+	libhoney.Init(libhoney.Config{
+		WriteKey: writeKey,
+		Dataset:  dataset,
+	})
 	builder := libhoney.NewBuilder()
-	builder.WriteKey = writeKey
-	builder.Dataset = dataset
 	// default sample reate is 1: aka no sampling.
-	// set sampleRate on the exporter to be the sample rate given to the ProbabilitySampler if used.
+	// set sampleRate on the exporter to be the sample rate given to the
+	// ProbabilitySampler if used.
 	return &Exporter{
 		Builder:        builder,
 		SampleFraction: 1,
@@ -104,7 +108,6 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	if sd.Status.Message != "" {
 		ev.AddField("status_description", sd.Status.Message)
 	}
-
 	ev.SendPresampled()
 }
 

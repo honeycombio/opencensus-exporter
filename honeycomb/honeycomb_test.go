@@ -159,12 +159,15 @@ func TestExport(t *testing.T) {
 func TestHoneycombOutput(t *testing.T) {
 	mockHoneycomb := &libhoney.MockOutput{}
 	assert := assert.New(t)
-	exporter := NewExporter("test", "test")
+	exporter := NewExporter("overridden", "overridden")
 	exporter.ServiceName = "honeycomb-test"
 
 	libhoney.Init(libhoney.Config{
-		Output: mockHoneycomb,
+		WriteKey: "test",
+		Dataset:  "test",
+		Output:   mockHoneycomb,
 	})
+	exporter.Builder = libhoney.NewBuilder()
 
 	trace.RegisterExporter(exporter)
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
