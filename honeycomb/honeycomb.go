@@ -71,10 +71,9 @@ func NewExporter(writeKey, dataset string) *Exporter {
 		Dataset:  dataset,
 	})
 	builder := libhoney.NewBuilder()
-	builder.WriteKey = writeKey
-	builder.Dataset = dataset
 	// default sample reate is 1: aka no sampling.
-	// set sampleRate on the exporter to be the sample rate given to the ProbabilitySampler if used.
+	// set sampleRate on the exporter to be the sample rate given to the
+	// ProbabilitySampler if used.
 	return &Exporter{
 		Builder:        builder,
 		SampleFraction: 1,
@@ -109,7 +108,6 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	if sd.Status.Message != "" {
 		ev.AddField("status_description", sd.Status.Message)
 	}
-
 	ev.SendPresampled()
 }
 
