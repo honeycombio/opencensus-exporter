@@ -27,7 +27,7 @@ func TestExport(t *testing.T) {
 				Name:      "name",
 				SpanKind:  trace.SpanKindClient,
 				StartTime: now,
-				EndTime:   now.Add(1.0 * time.Millisecond),
+				EndTime:   now.Add(time.Duration(0.5 * float64(time.Millisecond))),
 				Attributes: map[string]interface{}{
 					"stringkey": "value",
 					"intkey":    int64(42),
@@ -66,7 +66,7 @@ func TestExport(t *testing.T) {
 				Name:       "name",
 				ParentID:   "",
 				Timestamp:  now,
-				DurationMs: float64(1),
+				DurationMs: 0.5,
 				Annotations: []Annotation{
 					{
 						Timestamp: now,
@@ -172,7 +172,7 @@ func TestHoneycombOutput(t *testing.T) {
 	trace.RegisterExporter(exporter)
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	_, span := trace.StartSpan(context.TODO(), "mySpan")
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(time.Duration(0.5 * float64(time.Millisecond)))
 	span.AddAttributes(trace.StringAttribute("attributeName", "attributeValue"))
 	span.End()
 
@@ -190,6 +190,7 @@ func TestHoneycombOutput(t *testing.T) {
 	durationMsFl, ok := durationMs.(float64)
 	assert.Equal(ok, true)
 	assert.Equal((durationMsFl > 0), true)
+	assert.Equal((durationMsFl < 1), true)
 
 	attributeName := mockHoneycomb.Events()[0].Fields()["attributeName"]
 	assert.Equal("attributeValue", attributeName)
