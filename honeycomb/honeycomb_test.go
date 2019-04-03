@@ -27,7 +27,7 @@ func TestExport(t *testing.T) {
 				Name:      "name",
 				SpanKind:  trace.SpanKindClient,
 				StartTime: now,
-				EndTime:   now.Add(24 * time.Hour),
+				EndTime:   now.Add(1.0 * time.Millisecond),
 				Attributes: map[string]interface{}{
 					"stringkey": "value",
 					"intkey":    int64(42),
@@ -66,7 +66,7 @@ func TestExport(t *testing.T) {
 				Name:       "name",
 				ParentID:   "",
 				Timestamp:  now,
-				DurationMs: 86400000,
+				DurationMs: float64(1),
 				Annotations: []Annotation{
 					{
 						Timestamp: now,
@@ -182,7 +182,7 @@ func TestHoneycombOutput(t *testing.T) {
 		"trace.span_id":  span.SpanContext().SpanID.String(),
 		"name":           "mySpan",
 		"attributeName":  "attributeValue",
-		"duration_ms":    1,
+		"duration_ms":    float64(1),
 		"timestamp":      mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
 		"service_name":   "honeycomb-test",
 	}, mockHoneycomb.Events()[0].Fields())

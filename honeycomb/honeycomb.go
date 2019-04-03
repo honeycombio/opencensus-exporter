@@ -44,7 +44,7 @@ type Span struct {
 	Name        string       `json:"name"`
 	ID          string       `json:"trace.span_id"`
 	ParentID    string       `json:"trace.parent_id,omitempty"`
-	DurationMs  int          `json:"duration_ms,omitempty"`
+	DurationMs  float64      `json:"duration_ms"`
 	Timestamp   time.Time    `json:"timestamp,omitempty"`
 	Annotations []Annotation `json:"annotations,omitempty"`
 }
@@ -125,7 +125,7 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		hcSpan.DurationMs = int(e.Sub(s) / time.Millisecond)
+		hcSpan.DurationMs = float64(e.Sub(s) / time.Millisecond)
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
