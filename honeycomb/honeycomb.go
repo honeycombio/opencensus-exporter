@@ -44,7 +44,7 @@ type Span struct {
 	Name        string       `json:"name"`
 	ID          string       `json:"trace.span_id"`
 	ParentID    string       `json:"trace.parent_id,omitempty"`
-	DurationMs  int          `json:"duration_ms,omitempty"`
+	DurationMs  float64      `json:"duration_ms"`
 	Timestamp   time.Time    `json:"timestamp,omitempty"`
 	Annotations []Annotation `json:"annotations,omitempty"`
 }
@@ -63,7 +63,7 @@ func (e *Exporter) Close() {
 // Don't have a Honeycomb account? Sign up at https://ui.honeycomb.io/signup
 func NewExporter(writeKey, dataset string) *Exporter {
 	// Developer note: bump this with each release
-	versionStr := "0.0.5"
+	versionStr := "0.0.6"
 	libhoney.UserAgentAddition = "Honeycomb-OpenCensus-exporter/" + versionStr
 
 	libhoney.Init(libhoney.Config{
@@ -125,7 +125,7 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		hcSpan.DurationMs = int(e.Sub(s) / time.Millisecond)
+		hcSpan.DurationMs = float64(e.Sub(s)) / float64(time.Millisecond)
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {

@@ -27,7 +27,7 @@ func TestExport(t *testing.T) {
 				Name:      "name",
 				SpanKind:  trace.SpanKindClient,
 				StartTime: now,
-				EndTime:   now.Add(24 * time.Hour),
+				EndTime:   now.Add(time.Duration(0.5 * float64(time.Millisecond))),
 				Attributes: map[string]interface{}{
 					"stringkey": "value",
 					"intkey":    int64(42),
@@ -66,7 +66,7 @@ func TestExport(t *testing.T) {
 				Name:       "name",
 				ParentID:   "",
 				Timestamp:  now,
-				DurationMs: 86400000,
+				DurationMs: 0.5,
 				Annotations: []Annotation{
 					{
 						Timestamp: now,
@@ -172,19 +172,33 @@ func TestHoneycombOutput(t *testing.T) {
 	trace.RegisterExporter(exporter)
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	_, span := trace.StartSpan(context.TODO(), "mySpan")
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(time.Duration(0.5 * float64(time.Millisecond)))
 	span.AddAttributes(trace.StringAttribute("attributeName", "attributeValue"))
 	span.End()
 
 	assert.Equal(1, len(mockHoneycomb.Events()))
-	assert.Equal(map[string]interface{}{
-		"trace.trace_id": span.SpanContext().TraceID.String(),
-		"trace.span_id":  span.SpanContext().SpanID.String(),
-		"name":           "mySpan",
-		"attributeName":  "attributeValue",
-		"duration_ms":    1,
-		"timestamp":      mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
-		"service_name":   "honeycomb-test",
-	}, mockHoneycomb.Events()[0].Fields())
+	traceID := mockHoneycomb.Events()[0].Fields()["trace.trace_id"]
+	assert.Equal(span.SpanContext().TraceID.String(), traceID)
+
+	spanID := mockHoneycomb.Events()[0].Fields()["trace.span_id"]
+	assert.Equal(span.SpanContext().SpanID.String(), spanID)
+
+	name := mockHoneycomb.Events()[0].Fields()["name"]
+	assert.Equal("mySpan", name)
+
+	durationMs := mockHoneycomb.Events()[0].Fields()["duration_ms"]
+	durationMsFl, ok := durationMs.(float64)
+	assert.Equal(ok, true)
+	assert.Equal((durationMsFl > 0), true)
+	assert.Equal((durationMsFl < 1), true)
+
+	attributeName := mockHoneycomb.Events()[0].Fields()["attributeName"]
+	assert.Equal("attributeValue", attributeName)
+
+	timestamp := mockHoneycomb.Events()[0].Fields()["timestamp"]
+	assert.Equal(mockHoneycomb.Events()[0].Timestamp, timestamp)
+
+	serviceName := mockHoneycomb.Events()[0].Fields()["service_name"]
+	assert.Equal("honeycomb-test", serviceName)
 	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
 }
