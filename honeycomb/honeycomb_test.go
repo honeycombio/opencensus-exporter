@@ -177,14 +177,27 @@ func TestHoneycombOutput(t *testing.T) {
 	span.End()
 
 	assert.Equal(1, len(mockHoneycomb.Events()))
-	assert.Equal(map[string]interface{}{
-		"trace.trace_id": span.SpanContext().TraceID.String(),
-		"trace.span_id":  span.SpanContext().SpanID.String(),
-		"name":           "mySpan",
-		"attributeName":  "attributeValue",
-		"duration_ms":    float64(1),
-		"timestamp":      mockHoneycomb.Events()[0].Timestamp, // This timestamp test isn't useful, but does let us check the whole struct
-		"service_name":   "honeycomb-test",
-	}, mockHoneycomb.Events()[0].Fields())
+	traceID := mockHoneycomb.Events()[0].Fields()["trace.trace_id"]
+	assert.Equal(span.SpanContext().TraceID.String(), traceID)
+
+	spanID := mockHoneycomb.Events()[0].Fields()["trace.span_id"]
+	assert.Equal(span.SpanContext().SpanID.String(), spanID)
+
+	name := mockHoneycomb.Events()[0].Fields()["name"]
+	assert.Equal("mySpan", name)
+
+	// I wish we could, but I can't test duration_ms here because of it's variability, and the fact that it's an undefined interface.
+	// OpenCensus doesn't give me access to set start/end times to something we know.
+	// So for now, though it makes me sad, skipping the duration_ms check
+	// It should equal something like 1.4...
+
+	attributeName := mockHoneycomb.Events()[0].Fields()["attributeName"]
+	assert.Equal("attributeValue", attributeName)
+
+	timestamp := mockHoneycomb.Events()[0].Fields()["timestamp"]
+	assert.Equal(mockHoneycomb.Events()[0].Timestamp, timestamp)
+
+	serviceName := mockHoneycomb.Events()[0].Fields()["service_name"]
+	assert.Equal("honeycomb-test", serviceName)
 	assert.Equal(mockHoneycomb.Events()[0].Dataset, "test")
 }

@@ -125,7 +125,7 @@ func honeycombSpan(s *trace.SpanData) Span {
 	}
 
 	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		hcSpan.DurationMs = float64(e.Sub(s) / time.Millisecond)
+		hcSpan.DurationMs = float64(e.Sub(s)) / float64(time.Millisecond)
 	}
 
 	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
