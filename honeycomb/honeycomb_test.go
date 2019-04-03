@@ -186,10 +186,10 @@ func TestHoneycombOutput(t *testing.T) {
 	name := mockHoneycomb.Events()[0].Fields()["name"]
 	assert.Equal("mySpan", name)
 
-	// I wish we could, but I can't test duration_ms here because of it's variability, and the fact that it's an undefined interface.
-	// OpenCensus doesn't give me access to set start/end times to something we know.
-	// So for now, though it makes me sad, skipping the duration_ms check
-	// It should equal something like 1.4...
+	durationMs := mockHoneycomb.Events()[0].Fields()["duration_ms"]
+	durationMsFl, ok := durationMs.(float64)
+	assert.Equal(ok, true)
+	assert.Equal((durationMsFl > 0), true)
 
 	attributeName := mockHoneycomb.Events()[0].Fields()["attributeName"]
 	assert.Equal("attributeValue", attributeName)
