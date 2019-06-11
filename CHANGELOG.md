@@ -1,5 +1,11 @@
 # Honeycomb OpenCensus Exporter Changelog
 
+## 1.0.1 2019-06-10
+
+Improvements:
+
+- Adds go modules in order to be able to receive spans from OpenCensus Service.
+
 ## 1.0.0 2019-06-06
 
 Improvements:
