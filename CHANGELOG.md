@@ -4,7 +4,7 @@
 
 Improvements:
 
-- Adds go modules
+- Adds go modules in order to be able to receive spans from OpenCensus Service.
 
 ## 1.0.0 2019-06-06
 
