@@ -1,3 +1,9 @@
+# This project is no longer under development!
+
+This project is not actively maintained and you should not use it. New issues and pull requests will likely be ignored. OpenCensus has been superseded by OpenTelementry.
+
+The [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector) can read & write multiple trace formats and is the preferred alternative.
+
 # Honeycomb OpenCensus Go Exporter
 
 ![Honeycomb Logo](https://github.com/honeycombio/opencensus-exporter/blob/master/static/honeycomb-logo.png)
